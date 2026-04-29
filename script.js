@@ -1,4 +1,4 @@
-// ========== 1. 词库定义（按你提供的四个题库） ==========
+// ========== 1. 词库定义 ==========
 // 基础测试（22个）
 const basicWords = [
     { word: "test", chinese: "测试", phonetic: "/test/" },
@@ -53,10 +53,7 @@ const operationWords = [
     { word: "analyze", chinese: "分析", phonetic: "/ˈæn.əl.aɪz/" }
 ];
 
-// 词汇汇总 = 基础+缺陷+操作
 const allWords = [...basicWords, ...defectWords, ...operationWords];
-
-// 题库映射（方便切换）
 const topicMap = {
     all: allWords,
     basic: basicWords,
@@ -64,7 +61,7 @@ const topicMap = {
     operation: operationWords
 };
 
-// ========== 2. 页面元素绑定 ==========
+// ========== 2. DOM 元素 ==========
 const chineseEl = document.getElementById('chineseWord');
 const phoneticEl = document.getElementById('phonetic');
 const answerInput = document.getElementById('answerInput');
@@ -80,23 +77,24 @@ const clearWrongBtn = document.getElementById('clearWrongBtn');
 const speakBtn = document.getElementById('speakBtn');
 
 // ========== 3. 全局变量 ==========
-let currentTopic = "all";       // 当前题库
-let currentMode = "random";     // 练习模式: random, sequential, wrong
-let currentWordList = [];       // 当前题库的所有单词
-let currentIndex = 0;           // 顺序模式下的索引
+let currentTopic = "all";
+let currentMode = "random";
+let currentWordList = [];
+let currentIndex = 0;
 let correctCount = 0;
 let wrongCount = 0;
-let isAnswered = false;          // 当前题目是否已作答
-let wrongWords = [];             // 错词本（存单词对象）
+let isAnswered = false;
+let wrongWords = [];
+
+// **关键修复：存储当前正在练习的单词对象**
+let currentWordObj = null;
 
 // ========== 4. 辅助函数 ==========
-// 更新统计数字
 function updateStats() {
     correctSpan.textContent = correctCount;
     wrongSpan.textContent = wrongCount;
 }
 
-// 更新进度显示
 function updateProgress() {
     if (currentMode === "sequential") {
         progressSpan.textContent = currentIndex + 1;
@@ -105,14 +103,13 @@ function updateProgress() {
         progressSpan.textContent = wrongWords.length;
         totalSpan.textContent = wrongWords.length;
     } else {
-        // 随机模式显示总词库数量
         progressSpan.textContent = currentWordList.length;
         totalSpan.textContent = currentWordList.length;
     }
 }
 
-// 获取当前应该显示的单词对象
-function getCurrentWord() {
+// 根据当前模式和题库，随机/顺序获取一个单词对象（不保存）
+function fetchNewWordObj() {
     if (currentMode === "sequential") {
         if (currentIndex >= 0 && currentIndex < currentWordList.length) {
             return currentWordList[currentIndex];
@@ -120,20 +117,19 @@ function getCurrentWord() {
         return null;
     } else if (currentMode === "wrong") {
         if (wrongWords.length === 0) return null;
-        let randomIndex = Math.floor(Math.random() * wrongWords.length);
-        return wrongWords[randomIndex];
+        let rand = Math.floor(Math.random() * wrongWords.length);
+        return wrongWords[rand];
     } else { // random
         if (currentWordList.length === 0) return null;
-        let randomIndex = Math.floor(Math.random() * currentWordList.length);
-        return currentWordList[randomIndex];
+        let rand = Math.floor(Math.random() * currentWordList.length);
+        return currentWordList[rand];
     }
 }
 
-// 显示单词到页面上
-function displayWord() {
-    let wordObj = getCurrentWord();
-    if (!wordObj) {
-        // 没有单词可显示（例如错词本为空或顺序练习完成）
+// 刷新界面：获取新单词并保存到 currentWordObj
+function refreshWord() {
+    currentWordObj = fetchNewWordObj();
+    if (!currentWordObj) {
         chineseEl.textContent = "🎉 恭喜完成！ 🎉";
         phoneticEl.textContent = "";
         answerInput.disabled = true;
@@ -144,9 +140,9 @@ function displayWord() {
         feedbackEl.innerHTML = `<span style="color:green">练习完成！正确率 ${percent}%</span>`;
         return;
     }
-    // 更新页面内容
-    chineseEl.textContent = wordObj.chinese;
-    phoneticEl.textContent = wordObj.phonetic || "";
+    // 显示单词、音标
+    chineseEl.textContent = currentWordObj.chinese;
+    phoneticEl.textContent = currentWordObj.phonetic || "";
     answerInput.disabled = false;
     checkBtn.disabled = false;
     nextBtn.disabled = true;
@@ -156,61 +152,59 @@ function displayWord() {
     answerInput.focus();
     updateProgress();
 
-    // 设置发音按钮
+    // 发音按钮
     speakBtn.onclick = () => {
-        let utterance = new SpeechSynthesisUtterance(wordObj.word);
+        let utterance = new SpeechSynthesisUtterance(currentWordObj.word);
         utterance.lang = 'en-US';
-        speechSynthesis.cancel(); // 避免重叠
+        speechSynthesis.cancel();
         speechSynthesis.speak(utterance);
     };
 }
 
-// 重置整个练习（保持当前模式和题库）
+// 重置全部状态
 function resetGame() {
     correctCount = 0;
     wrongCount = 0;
     isAnswered = false;
     if (currentMode === "sequential") currentIndex = 0;
     updateStats();
-    currentWordList = [...topicMap[currentTopic]];  // 重新复制题库
+    currentWordList = [...topicMap[currentTopic]];
     
-    // 如果是错词模式且错词本为空，显示提示
     if (currentMode === "wrong" && wrongWords.length === 0) {
         chineseEl.textContent = "📭 暂无错词";
         phoneticEl.textContent = "";
         answerInput.disabled = true;
         checkBtn.disabled = true;
         nextBtn.disabled = true;
-        feedbackEl.innerHTML = `<span style="color:orange">请先在其他模式中积累错词。</span>`;
+        feedbackEl.innerHTML = `<span style="color:orange">请在其他模式中积累错词。</span>`;
         return;
     }
-    displayWord();
+    refreshWord();
 }
 
-// 检查答案
+// 检查答案（使用缓存的 currentWordObj）
 function checkAnswer() {
     if (isAnswered) {
         feedbackEl.innerHTML = '<span style="color:orange">⚠️ 已经作答过了，进入下一词吧</span>';
         return;
     }
-    let wordObj = getCurrentWord();
-    if (!wordObj) {
+    if (!currentWordObj) {
         resetGame();
         return;
     }
     let userAnswer = answerInput.value.trim().toLowerCase();
-    let correctAnswer = wordObj.word.toLowerCase();
+    let correctAnswer = currentWordObj.word.toLowerCase();
     
     if (userAnswer === correctAnswer) {
         correctCount++;
         feedbackEl.innerHTML = '<span style="color:green">✅ 正确！很棒！</span>';
     } else {
         wrongCount++;
-        feedbackEl.innerHTML = `<span style="color:#c2410c">❌ 错误，正确答案是 “${wordObj.word}”</span>`;
-        // 记录到错词本（不重复）
-        let exists = wrongWords.some(w => w.word === wordObj.word);
+        feedbackEl.innerHTML = `<span style="color:#c2410c">❌ 错误，正确答案是 “${currentWordObj.word}”</span>`;
+        // 加入错词本（去重）
+        let exists = wrongWords.some(w => w.word === currentWordObj.word);
         if (!exists) {
-            wrongWords.push({ ...wordObj });
+            wrongWords.push({ ...currentWordObj });
         }
     }
     isAnswered = true;
@@ -228,11 +222,11 @@ function nextWord() {
     if (currentMode === "sequential") {
         currentIndex++;
         if (currentIndex >= currentWordList.length) {
-            displayWord();  // 显示完成界面
+            refreshWord();   // 显示完成界面
             return;
         }
     }
-    displayWord();  // 随机/错词/顺序未完成时，刷新单词
+    refreshWord();  // 获取下一个单词
 }
 
 // 清空错词本
@@ -249,7 +243,7 @@ function clearWrong() {
     }
 }
 
-// 切换练习模式
+// 切换模式
 function setMode(mode) {
     currentMode = mode;
     resetGame();
@@ -263,14 +257,13 @@ function setTopic(topic) {
     resetGame();
 }
 
-// ========== 5. 绑定按钮事件和初始化 ==========
+// ========== 5. 事件绑定 ==========
 function bindEvents() {
     checkBtn.onclick = checkAnswer;
     nextBtn.onclick = nextWord;
     resetBtn.onclick = resetGame;
     clearWrongBtn.onclick = clearWrong;
     
-    // 模式按钮
     document.querySelectorAll('.mode-btn').forEach(btn => {
         btn.onclick = () => {
             document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
@@ -279,7 +272,6 @@ function bindEvents() {
         };
     });
     
-    // 题库按钮
     document.querySelectorAll('.topic-btn').forEach(btn => {
         btn.onclick = () => {
             document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
@@ -288,7 +280,6 @@ function bindEvents() {
         };
     });
     
-    // 回车键检查
     answerInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && !checkBtn.disabled) {
             checkAnswer();
@@ -296,17 +287,15 @@ function bindEvents() {
     });
 }
 
-// 启动应用
+// 初始化
 function init() {
     bindEvents();
-    // 设置默认高亮
     document.querySelector('.mode-btn[data-mode="random"]').classList.add('active');
     document.querySelector('.topic-btn[data-topic="all"]').classList.add('active');
     currentMode = "random";
     currentTopic = "all";
     currentWordList = [...topicMap.all];
-    resetGame();  // 这里会调用 displayWord 显示第一个单词
+    resetGame();
 }
 
-// 确保 DOM 完全加载后再执行
 window.addEventListener('DOMContentLoaded', init);
