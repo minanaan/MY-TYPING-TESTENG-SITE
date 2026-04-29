@@ -8,17 +8,17 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- 顶部控制栏 -->
+        <!-- 控制栏 -->
         <div class="control-bar">
             <div class="mode-group">
-                <span class="control-label">练习模式：</span>
-                <button class="mode-btn active" data-mode="random">随机练习</button>
+                <span>练习模式：</span>
+                <button class="mode-btn" data-mode="random">随机练习</button>
                 <button class="mode-btn" data-mode="sequential">顺序练习</button>
                 <button class="mode-btn" data-mode="wrong">错词练习</button>
             </div>
             <div class="topic-group">
-                <span class="control-label">题库：</span>
-                <button class="topic-btn active" data-topic="all">词汇汇总</button>
+                <span>题库：</span>
+                <button class="topic-btn" data-topic="all">词汇汇总</button>
                 <button class="topic-btn" data-topic="basic">基础测试</button>
                 <button class="topic-btn" data-topic="defect">缺陷问题</button>
                 <button class="topic-btn" data-topic="operation">测试操作</button>
@@ -30,18 +30,21 @@
             <div class="stats">
                 <span>✅ 正确：<span id="correctCount">0</span></span>
                 <span>❌ 错误：<span id="wrongCount">0</span></span>
-                <span>📊 进度：<span id="progress">0</span> / <span id="totalWords">0</span></span>
+                <span>📋 进度：<span id="progress">0</span> / <span id="totalWords">0</span></span>
                 <button id="clearWrongBtn" class="small-btn">🗑️ 清空错词本</button>
             </div>
             <div class="question-area">
                 <div class="chinese-word" id="chineseWord">加载中...</div>
-                <div class="phonetic" id="phonetic"></div>
+                <div class="phonetic-line">
+                    <span class="phonetic" id="phonetic"></span>
+                    <button id="speakBtn" class="speak-btn" title="播放读音">🔊</button>
+                </div>
                 <input type="text" id="answerInput" placeholder="在这里输入英文单词..." autocomplete="off" autofocus>
                 <div class="feedback" id="feedback"></div>
                 <div class="buttons">
-                    <button id="checkBtn">✓ 检查</button>
+                    <button id="checkBtn">✔ 检查</button>
                     <button id="nextBtn" disabled>→ 下一词</button>
-                    <button id="resetBtn">⟳ 重新开始</button>
+                    <button id="resetBtn">⏰ 重新开始</button>
                 </div>
             </div>
         </div>
