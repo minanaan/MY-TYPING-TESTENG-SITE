@@ -1,128 +1,306 @@
-* {
-    box-sizing: border-box;
-    user-select: none;
+// ======================== 词库定义（按用户提供） ========================
+
+// 1. 基础测试（共 27 个单词/短语）
+const basicWords = [
+    { word: "test", chinese: "测试", phonetic: "/test/" },
+    { word: "test case", chinese: "测试用例", phonetic: "/test keɪs/" },
+    { word: "test report", chinese: "测试报告", phonetic: "/test rɪˈpɔːt/" },
+    { word: "test result", chinese: "测试结果", phonetic: "/test rɪˈzʌlt/" },
+    { word: "test process", chinese: "测试流程", phonetic: "/test ˈprəʊses/" },
+    { word: "test step", chinese: "测试步骤", phonetic: "/test step/" },
+    { word: "test plan", chinese: "测试计划", phonetic: "/test plæn/" },
+    { word: "test environment", chinese: "测试环境", phonetic: "/test ɪnˈvaɪrənmənt/" },
+    { word: "test data", chinese: "测试数据", phonetic: "/test ˈdeɪtə/" },
+    { word: "test tool", chinese: "测试工具", phonetic: "/test tuːl/" },
+    { word: "device", chinese: "设备", phonetic: "/dɪˈvaɪs/" },
+    { word: "sensor", chinese: "传感器", phonetic: "/ˈsen.sər/" },
+    { word: "firmware", chinese: "固件", phonetic: "/ˈfɜːm.weər/" },
+    { word: "signal", chinese: "信号", phonetic: "/ˈsɪɡ.nəl/" },
+    { word: "data", chinese: "数据", phonetic: "/ˈdeɪtə/" },
+    { word: "connection", chinese: "连接", phonetic: "/kəˈnek.ʃən/" },
+    { word: "transmission", chinese: "传输", phonetic: "/trænzˈmɪʃ.ən/" },
+    { word: "power", chinese: "电源", phonetic: "/ˈpaʊər/" },
+    { word: "run", chinese: "运行", phonetic: "/rʌn/" },
+    { word: "start", chinese: "启动", phonetic: "/stɑːt/" },
+    { word: "stop", chinese: "停止", phonetic: "/stɒp/" },
+    { word: "reset", chinese: "重置", phonetic: "/ˌriːˈset/" }
+];
+
+// 2. 缺陷问题（共 10 个）
+const defectWords = [
+    { word: "defect", chinese: "缺陷", phonetic: "/ˈdiː.fekt/" },
+    { word: "bug", chinese: "漏洞", phonetic: "/bʌɡ/" },
+    { word: "error", chinese: "错误", phonetic: "/ˈer.ər/" },
+    { word: "fault", chinese: "故障", phonetic: "/fɔːlt/" },
+    { word: "problem", chinese: "问题", phonetic: "/ˈprɒb.ləm/" },
+    { word: "abnormal", chinese: "异常", phonetic: "/æbˈnɔː.məl/" },
+    { word: "failure", chinese: "失败", phonetic: "/ˈfeɪ.ljər/" },
+    { word: "crash", chinese: "崩溃", phonetic: "/kræʃ/" },
+    { word: "warning", chinese: "警告", phonetic: "/ˈwɔː.nɪŋ/" },
+    { word: "error code", chinese: "错误代码", phonetic: "/ˈer.ər koʊd/" }
+];
+
+// 3. 测试操作（共 10 个）
+const operationWords = [
+    { word: "run test", chinese: "执行测试", phonetic: "/rʌn test/" },
+    { word: "check", chinese: "检查", phonetic: "/tʃek/" },
+    { word: "verify", chinese: "验证", phonetic: "/ˈver.ɪ.faɪ/" },
+    { word: "confirm", chinese: "确认", phonetic: "/kənˈfɜːm/" },
+    { word: "record", chinese: "记录", phonetic: "/rɪˈkɔːd/" },
+    { word: "report", chinese: "报告", phonetic: "/rɪˈpɔːt/" },
+    { word: "debug", chinese: "调试", phonetic: "/ˌdiːˈbʌɡ/" },
+    { word: "simulate", chinese: "模拟", phonetic: "/ˈsɪm.jə.leɪt/" },
+    { word: "monitor", chinese: "监控", phonetic: "/ˈmɒn.ɪ.tər/" },
+    { word: "analyze", chinese: "分析", phonetic: "/ˈæn.əl.aɪz/" }
+];
+
+// 词汇汇总 = 基础 + 缺陷 + 操作
+const allWords = [...basicWords, ...defectWords, ...operationWords];
+
+// 题库映射
+const topicMap = {
+    all: allWords,
+    basic: basicWords,
+    defect: defectWords,
+    operation: operationWords
+};
+
+// ======================== 全局状态 ========================
+let currentTopic = "all";      // 当前题库标识
+let currentMode = "random";    // random, sequential, wrong
+let currentWordList = [];       // 当前使用的单词列表
+let currentIndex = 0;           // 顺序模式下的索引
+let correctCount = 0;
+let wrongCount = 0;
+let isAnswered = false;         // 当前单词是否已作答
+let wrongWords = [];            // 错词本（存储单词对象）
+
+// DOM 元素
+const chineseEl = document.getElementById('chineseWord');
+const phoneticEl = document.getElementById('phonetic');
+const answerInput = document.getElementById('answerInput');
+const feedbackEl = document.getElementById('feedback');
+const checkBtn = document.getElementById('checkBtn');
+const nextBtn = document.getElementById('nextBtn');
+const resetBtn = document.getElementById('resetBtn');
+const correctSpan = document.getElementById('correctCount');
+const wrongSpan = document.getElementById('wrongCount');
+const progressSpan = document.getElementById('progress');
+const totalSpan = document.getElementById('totalWords');
+const clearWrongBtn = document.getElementById('clearWrongBtn');
+
+// 模式按钮
+const modeBtns = document.querySelectorAll('.mode-btn');
+const topicBtns = document.querySelectorAll('.topic-btn');
+
+// ======================== 辅助函数 ========================
+// 根据当前题库和模式，获取当前要显示的单词
+function getCurrentWord() {
+    if (currentMode === "sequential") {
+        if (currentWordList.length === 0) return null;
+        if (currentIndex >= currentWordList.length) {
+            return null;
+        }
+        return currentWordList[currentIndex];
+    } 
+    else if (currentMode === "wrong") {
+        if (wrongWords.length === 0) return null;
+        const randomIndex = Math.floor(Math.random() * wrongWords.length);
+        return wrongWords[randomIndex];
+    } 
+    else { // random
+        if (currentWordList.length === 0) return null;
+        const randomIndex = Math.floor(Math.random() * currentWordList.length);
+        return currentWordList[randomIndex];
+    }
 }
 
-body {
-    background: linear-gradient(145deg, #f0f4fa 0%, #d9e0e8 100%);
-    font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    margin: 0;
-    padding: 20px;
+// 更新界面显示
+function displayCurrentWord() {
+    const wordObj = getCurrentWord();
+    if (!wordObj) {
+        // 没有单词可显示
+        chineseEl.textContent = "🎉 恭喜完成！ 🎉";
+        phoneticEl.textContent = "";
+        answerInput.disabled = true;
+        checkBtn.disabled = true;
+        nextBtn.disabled = true;
+        const total = correctCount + wrongCount;
+        const percent = total === 0 ? 0 : Math.round(correctCount / total * 100);
+        feedbackEl.innerHTML = `<span style="color:green">太棒了！正确率 ${percent}%</span>`;
+        return;
+    }
+    chineseEl.textContent = wordObj.chinese;
+    phoneticEl.textContent = wordObj.phonetic || "";
+    answerInput.disabled = false;
+    checkBtn.disabled = false;
+    nextBtn.disabled = true;
+    isAnswered = false;
+    feedbackEl.innerHTML = "";
+    answerInput.value = "";
+    answerInput.focus();
+    updateProgress();
 }
 
-.container {
-    width: 100%;
-    max-width: 600px;
+// 更新进度显示
+function updateProgress() {
+    if (currentMode === "sequential") {
+        progressSpan.textContent = `${currentIndex + 1}`;
+        totalSpan.textContent = currentWordList.length;
+    } else if (currentMode === "wrong") {
+        progressSpan.textContent = wrongWords.length;
+        totalSpan.textContent = wrongWords.length;
+    } else { // random
+        progressSpan.textContent = currentWordList.length;
+        totalSpan.textContent = currentWordList.length;
+    }
 }
 
-.card {
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(2px);
-    border-radius: 48px;
-    box-shadow: 0 25px 45px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.5);
-    padding: 30px 24px 40px;
-    transition: all 0.2s;
+function updateStats() {
+    correctSpan.textContent = correctCount;
+    wrongSpan.textContent = wrongCount;
 }
 
-.stats {
-    display: flex;
-    justify-content: space-between;
-    background: #ffffffcc;
-    padding: 12px 20px;
-    border-radius: 60px;
-    margin-bottom: 48px;
-    font-weight: 600;
-    color: #1e2f3e;
-    backdrop-filter: blur(4px);
-    font-size: 0.9rem;
+// 重置当前模式和题库下的状态
+function resetGameState() {
+    correctCount = 0;
+    wrongCount = 0;
+    isAnswered = false;
+    if (currentMode === "sequential") {
+        currentIndex = 0;
+    }
+    updateStats();
+    
+    // 重新加载当前题库的单词列表
+    currentWordList = [...topicMap[currentTopic]];
+    
+    // 如果错词模式且错词本为空，提示用户
+    if (currentMode === "wrong" && wrongWords.length === 0) {
+        chineseEl.textContent = "📭 暂无错词";
+        phoneticEl.textContent = "";
+        answerInput.disabled = true;
+        checkBtn.disabled = true;
+        nextBtn.disabled = true;
+        feedbackEl.innerHTML = `<span style="color:orange">请先在其他模式中积累错词，或清空后重新开始。</span>`;
+        return;
+    }
+    
+    displayCurrentWord();
 }
 
-.question-area {
-    text-align: center;
+// 检查答案
+function checkAnswer() {
+    if (isAnswered) {
+        feedbackEl.innerHTML = '<span style="color:orange">⚠️ 已经作答过了，进入下一词吧</span>';
+        return;
+    }
+    const currentWordObj = getCurrentWord();
+    if (!currentWordObj) {
+        resetGameState();
+        return;
+    }
+    
+    const userAnswer = answerInput.value.trim().toLowerCase();
+    const correctAnswer = currentWordObj.word.toLowerCase();
+    
+    if (userAnswer === correctAnswer) {
+        correctCount++;
+        feedbackEl.innerHTML = '<span style="color:green">✅ 正确！很棒！</span>';
+    } else {
+        wrongCount++;
+        feedbackEl.innerHTML = `<span style="color:#c2410c">❌ 错误，正确答案是 “${currentWordObj.word}”</span>`;
+        // 加入错词本（避免重复添加同一单词）
+        if (!wrongWords.some(w => w.word === currentWordObj.word)) {
+            wrongWords.push(currentWordObj);
+        }
+    }
+    isAnswered = true;
+    nextBtn.disabled = false;
+    checkBtn.disabled = true;
+    updateStats();
 }
 
-.chinese-word {
-    font-size: 3.8rem;
-    font-weight: 800;
-    color: #0a2b3e;
-    letter-spacing: 2px;
-    text-shadow: 2px 2px 8px rgba(0,0,0,0.05);
-    margin-bottom: 16px;
+// 下一词
+function nextWord() {
+    if (!isAnswered) {
+        feedbackEl.innerHTML = '<span style="color:red">请先检查答案！</span>';
+        return;
+    }
+    
+    if (currentMode === "sequential") {
+        currentIndex++;
+        if (currentIndex >= currentWordList.length) {
+            displayCurrentWord();
+            return;
+        }
+    }
+    displayCurrentWord();
 }
 
-.phonetic {
-    font-size: 1rem;
-    color: #2c6e9e;
-    background: #eef3fc;
-    display: inline-block;
-    padding: 6px 18px;
-    border-radius: 40px;
-    margin-bottom: 32px;
-    font-family: monospace;
+// 清空错词本
+function clearWrongWords() {
+    wrongWords = [];
+    if (currentMode === "wrong") {
+        resetGameState();
+    } else {
+        feedbackEl.innerHTML = '<span style="color:green">🗑️ 错词本已清空</span>';
+        setTimeout(() => { 
+            if (feedbackEl.innerHTML === '<span style="color:green">🗑️ 错词本已清空</span>') 
+                feedbackEl.innerHTML = ''; 
+        }, 1500);
+    }
 }
 
-#answerInput {
-    width: 100%;
-    padding: 18px 24px;
-    font-size: 1.3rem;
-    text-align: center;
-    border: 2px solid #cbdde9;
-    border-radius: 60px;
-    background: white;
-    outline: none;
-    transition: 0.2s;
-    font-weight: 500;
-    margin-bottom: 20px;
+// 切换模式
+function setMode(mode) {
+    currentMode = mode;
+    resetGameState();
 }
 
-#answerInput:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px #3b82f640;
+// 切换题库
+function setTopic(topic) {
+    currentTopic = topic;
+    currentWordList = [...topicMap[topic]];
+    currentIndex = 0;
+    resetGameState();
 }
 
-.feedback {
-    min-height: 60px;
-    font-size: 1rem;
-    font-weight: 500;
-    margin: 8px 0 20px;
+// 界面按钮绑定
+function bindEvents() {
+    checkBtn.addEventListener('click', checkAnswer);
+    nextBtn.addEventListener('click', nextWord);
+    resetBtn.addEventListener('click', () => resetGameState());
+    clearWrongBtn.addEventListener('click', clearWrongWords);
+    
+    modeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            modeBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            setMode(btn.dataset.mode);
+        });
+    });
+    
+    topicBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            topicBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            setTopic(btn.dataset.topic);
+        });
+    });
+    
+    answerInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !checkBtn.disabled) {
+            checkAnswer();
+        }
+    });
 }
 
-.buttons {
-    display: flex;
-    gap: 16px;
-    justify-content: center;
-    flex-wrap: wrap;
+// 初始化
+function init() {
+    bindEvents();
+    currentWordList = [...topicMap.all];
+    setMode('random');
+    setTopic('all');
 }
 
-button {
-    background: white;
-    border: none;
-    padding: 12px 28px;
-    border-radius: 60px;
-    font-weight: 700;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: 0.1s linear;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    border: 1px solid #cbdde9;
-}
-
-button#checkBtn {
-    background: #2563eb;
-    color: white;
-    border: none;
-    box-shadow: 0 4px 8px #1e3a8a30;
-}
-
-button#nextBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-button:active:not(:disabled) {
-    transform: scale(0.97);
-}
+init();
