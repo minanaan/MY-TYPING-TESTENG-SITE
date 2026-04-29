@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>测试部英语拼写练习</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="stats">
+                <span>✅ 正确: <span id="correctCount">0</span></span>
+                <span>❌ 错误: <span id="wrongCount">0</span></span>
+                <span>📊 进度: <span id="progress">0</span> / <span id="totalWords">0</span></span>
+            </div>
+            <div class="question-area">
+                <div class="chinese-word" id="chineseWord">加载中...</div>
+                <div class="phonetic" id="phonetic"></div>
+                <input type="text" id="answerInput" placeholder="在这里输入英文单词..." autocomplete="off" autofocus>
+                <div class="feedback" id="feedback"></div>
+                <div class="buttons">
+                    <button id="checkBtn">检查 ✓</button>
+                    <button id="nextBtn" disabled>下一词 →</button>
+                    <button id="resetBtn">重新开始</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
