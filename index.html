@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>测试部英语训练 · 拼写练习</title>
+    <title>测试部英语训练 · 拼写与释义</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-container">
-        <!-- 控制栏 -->
+        <!-- 控制栏：模式 + 题库 -->
         <div class="control-bar">
             <div class="mode-group">
                 <span>练习模式：</span>
                 <button class="mode-btn" data-mode="random">随机练习</button>
                 <button class="mode-btn" data-mode="sequential">顺序练习</button>
                 <button class="mode-btn" data-mode="wrong">错词练习</button>
+                <button class="mode-btn" data-mode="en2zh">英中练习</button>
             </div>
             <div class="topic-group">
                 <span>题库：</span>
@@ -30,16 +31,15 @@
             <div class="stats">
                 <span>✅ 正确：<span id="correctCount">0</span></span>
                 <span>❌ 错误：<span id="wrongCount">0</span></span>
+                <span>📊 准确率：<span id="accuracy">0</span>%</span>
+                <span>⏱️ 平均用时：<span id="avgTime">0.0</span> 秒</span>
                 <span>📋 进度：<span id="progress">0</span> / <span id="totalWords">0</span></span>
                 <button id="clearWrongBtn" class="small-btn">🗑️ 清空错词本</button>
             </div>
             <div class="question-area">
-                <div class="chinese-word" id="chineseWord">加载中...</div>
-                <div class="phonetic-line">
-                    <span class="phonetic" id="phonetic"></span>
-                    <button id="speakBtn" class="speak-btn" title="播放读音">🔊</button>
-                </div>
-                <input type="text" id="answerInput" placeholder="在这里输入英文单词..." autocomplete="off" autofocus>
+                <div class="question-text" id="questionText">加载中...</div>
+                <div class="extra-info" id="extraInfo"></div>
+                <input type="text" id="answerInput" placeholder="在这里输入答案..." autocomplete="off" autofocus>
                 <div class="feedback" id="feedback"></div>
                 <div class="buttons">
                     <button id="checkBtn">✔ 检查</button>

@@ -1,5 +1,4 @@
 // ========== 1. 词库定义 ==========
-// 基础测试（22个）
 const basicWords = [
     { word: "test", chinese: "测试", phonetic: "/test/" },
     { word: "test case", chinese: "测试用例", phonetic: "/test keɪs/" },
@@ -25,7 +24,6 @@ const basicWords = [
     { word: "reset", chinese: "重置", phonetic: "/ˌriːˈset/" }
 ];
 
-// 缺陷问题（10个）
 const defectWords = [
     { word: "defect", chinese: "缺陷", phonetic: "/ˈdiː.fekt/" },
     { word: "bug", chinese: "漏洞", phonetic: "/bʌɡ/" },
@@ -39,7 +37,6 @@ const defectWords = [
     { word: "error code", chinese: "错误代码", phonetic: "/ˈer.ər koʊd/" }
 ];
 
-// 测试操作（10个）
 const operationWords = [
     { word: "run test", chinese: "执行测试", phonetic: "/rʌn test/" },
     { word: "check", chinese: "检查", phonetic: "/tʃek/" },
@@ -62,8 +59,8 @@ const topicMap = {
 };
 
 // ========== 2. DOM 元素 ==========
-const chineseEl = document.getElementById('chineseWord');
-const phoneticEl = document.getElementById('phonetic');
+const questionTextEl = document.getElementById('questionText');
+const extraInfoEl = document.getElementById('extraInfo');
 const answerInput = document.getElementById('answerInput');
 const feedbackEl = document.getElementById('feedback');
 const checkBtn = document.getElementById('checkBtn');
@@ -71,28 +68,45 @@ const nextBtn = document.getElementById('nextBtn');
 const resetBtn = document.getElementById('resetBtn');
 const correctSpan = document.getElementById('correctCount');
 const wrongSpan = document.getElementById('wrongCount');
+const accuracySpan = document.getElementById('accuracy');
+const avgTimeSpan = document.getElementById('avgTime');
 const progressSpan = document.getElementById('progress');
 const totalSpan = document.getElementById('totalWords');
 const clearWrongBtn = document.getElementById('clearWrongBtn');
-const speakBtn = document.getElementById('speakBtn');
 
 // ========== 3. 全局变量 ==========
 let currentTopic = "all";
-let currentMode = "random";
+let currentMode = "random";      // 'random', 'sequential', 'wrong', 'en2zh'
 let currentWordList = [];
 let currentIndex = 0;
 let correctCount = 0;
 let wrongCount = 0;
 let isAnswered = false;
-let wrongWords = [];
+let wrongWords = [];             // 错词本，存完整单词对象
 
-// **关键修复：存储当前正在练习的单词对象**
+// 当前正在练习的单词对象
 let currentWordObj = null;
 
+// 计时相关
+let currentStartTime = null;     // 当前单词开始时间 (毫秒)
+let timeRecords = [];            // 存储每次答题的用时（秒）
+
 // ========== 4. 辅助函数 ==========
+// 更新统计（正确/错误/准确率/平均用时）
 function updateStats() {
     correctSpan.textContent = correctCount;
     wrongSpan.textContent = wrongCount;
+    const total = correctCount + wrongCount;
+    const accuracy = total === 0 ? 0 : Math.round((correctCount / total) * 100);
+    accuracySpan.textContent = accuracy;
+    
+    // 平均用时
+    if (timeRecords.length === 0) {
+        avgTimeSpan.textContent = "0.0";
+    } else {
+        const avg = timeRecords.reduce((a, b) => a + b, 0) / timeRecords.length;
+        avgTimeSpan.textContent = avg.toFixed(1);
+    }
 }
 
 function updateProgress() {
@@ -103,12 +117,13 @@ function updateProgress() {
         progressSpan.textContent = wrongWords.length;
         totalSpan.textContent = wrongWords.length;
     } else {
+        // random 或 en2zh 显示总词库数量（不按顺序）
         progressSpan.textContent = currentWordList.length;
         totalSpan.textContent = currentWordList.length;
     }
 }
 
-// 根据当前模式和题库，随机/顺序获取一个单词对象（不保存）
+// 根据当前模式和题库获取一个新的单词对象（不改变状态）
 function fetchNewWordObj() {
     if (currentMode === "sequential") {
         if (currentIndex >= 0 && currentIndex < currentWordList.length) {
@@ -117,32 +132,42 @@ function fetchNewWordObj() {
         return null;
     } else if (currentMode === "wrong") {
         if (wrongWords.length === 0) return null;
-        let rand = Math.floor(Math.random() * wrongWords.length);
+        const rand = Math.floor(Math.random() * wrongWords.length);
         return wrongWords[rand];
-    } else { // random
+    } else { // random 或 en2zh (随机抽取)
         if (currentWordList.length === 0) return null;
-        let rand = Math.floor(Math.random() * currentWordList.length);
+        const rand = Math.floor(Math.random() * currentWordList.length);
         return currentWordList[rand];
     }
 }
 
-// 刷新界面：获取新单词并保存到 currentWordObj
+// 刷新界面：获取新单词并计时
 function refreshWord() {
+    // 记录上一个单词的用时（如果有 currentStartTime 且已经作答过）
+    // 注意：计时在提交答案时已记录，这里不需要处理
+    
     currentWordObj = fetchNewWordObj();
     if (!currentWordObj) {
-        chineseEl.textContent = "🎉 恭喜完成！ 🎉";
-        phoneticEl.textContent = "";
+        questionTextEl.textContent = "🎉 恭喜完成！ 🎉";
+        extraInfoEl.textContent = "";
         answerInput.disabled = true;
         checkBtn.disabled = true;
         nextBtn.disabled = true;
-        let total = correctCount + wrongCount;
-        let percent = total === 0 ? 0 : Math.round(correctCount / total * 100);
-        feedbackEl.innerHTML = `<span style="color:green">练习完成！正确率 ${percent}%</span>`;
+        updateStats();
         return;
     }
-    // 显示单词、音标
-    chineseEl.textContent = currentWordObj.chinese;
-    phoneticEl.textContent = currentWordObj.phonetic || "";
+    
+    // 根据模式显示不同的题目
+    if (currentMode === "en2zh") {
+        // 英中练习：显示英文，要求输入中文
+        questionTextEl.textContent = currentWordObj.word;
+        extraInfoEl.textContent = currentWordObj.phonetic || "";
+    } else {
+        // 中译英（拼写）：显示中文，可附带音标辅助
+        questionTextEl.textContent = currentWordObj.chinese;
+        extraInfoEl.textContent = currentWordObj.phonetic || "";
+    }
+    
     answerInput.disabled = false;
     checkBtn.disabled = false;
     nextBtn.disabled = true;
@@ -150,29 +175,27 @@ function refreshWord() {
     feedbackEl.innerHTML = "";
     answerInput.value = "";
     answerInput.focus();
+    
+    // 开始计时
+    currentStartTime = Date.now();
+    
     updateProgress();
-
-    // 发音按钮
-    speakBtn.onclick = () => {
-        let utterance = new SpeechSynthesisUtterance(currentWordObj.word);
-        utterance.lang = 'en-US';
-        speechSynthesis.cancel();
-        speechSynthesis.speak(utterance);
-    };
+    updateStats();  // 刷新平均用时
 }
 
-// 重置全部状态
+// 重置游戏状态（不清空错词本，但重置正确/错误计数和计时记录）
 function resetGame() {
     correctCount = 0;
     wrongCount = 0;
+    timeRecords = [];
     isAnswered = false;
     if (currentMode === "sequential") currentIndex = 0;
     updateStats();
     currentWordList = [...topicMap[currentTopic]];
     
     if (currentMode === "wrong" && wrongWords.length === 0) {
-        chineseEl.textContent = "📭 暂无错词";
-        phoneticEl.textContent = "";
+        questionTextEl.textContent = "📭 暂无错词";
+        extraInfoEl.textContent = "";
         answerInput.disabled = true;
         checkBtn.disabled = true;
         nextBtn.disabled = true;
@@ -182,7 +205,7 @@ function resetGame() {
     refreshWord();
 }
 
-// 检查答案（使用缓存的 currentWordObj）
+// 检查答案（支持中译英和英中模式）
 function checkAnswer() {
     if (isAnswered) {
         feedbackEl.innerHTML = '<span style="color:orange">⚠️ 已经作答过了，进入下一词吧</span>';
@@ -192,25 +215,47 @@ function checkAnswer() {
         resetGame();
         return;
     }
-    let userAnswer = answerInput.value.trim().toLowerCase();
-    let correctAnswer = currentWordObj.word.toLowerCase();
     
-    if (userAnswer === correctAnswer) {
+    // 计算用时（秒）
+    const elapsed = (Date.now() - currentStartTime) / 1000;
+    timeRecords.push(elapsed);
+    
+    let userAnswer = answerInput.value.trim();
+    let isCorrect = false;
+    let correctAnswerText = "";
+    
+    if (currentMode === "en2zh") {
+        // 英中练习：比较中文（忽略大小写、前后空格，中文完全匹配即可）
+        const expectedChinese = currentWordObj.chinese;
+        correctAnswerText = expectedChinese;
+        isCorrect = (userAnswer === expectedChinese);
+    } else {
+        // 中译英拼写：比较英文（忽略大小写和前后空格）
+        const expectedWord = currentWordObj.word.toLowerCase();
+        correctAnswerText = expectedWord;
+        isCorrect = (userAnswer.trim().toLowerCase() === expectedWord);
+    }
+    
+    if (isCorrect) {
         correctCount++;
         feedbackEl.innerHTML = '<span style="color:green">✅ 正确！很棒！</span>';
     } else {
         wrongCount++;
-        feedbackEl.innerHTML = `<span style="color:#c2410c">❌ 错误，正确答案是 “${currentWordObj.word}”</span>`;
-        // 加入错词本（去重）
-        let exists = wrongWords.some(w => w.word === currentWordObj.word);
+        feedbackEl.innerHTML = `<span style="color:#c2410c">❌ 错误，正确答案是 “${correctAnswerText}”</span>`;
+        // 加入错词本（去重，基于 word 和 chinese 联合唯一）
+        const exists = wrongWords.some(w => w.word === currentWordObj.word && w.chinese === currentWordObj.chinese);
         if (!exists) {
             wrongWords.push({ ...currentWordObj });
         }
     }
+    
     isAnswered = true;
     nextBtn.disabled = false;
     checkBtn.disabled = true;
     updateStats();
+    
+    // 可选：显示本次用时
+    feedbackEl.innerHTML += `<span style="font-size:0.8rem; margin-left:10px;"> ⏱️ 本次用时 ${elapsed.toFixed(1)}秒</span>`;
 }
 
 // 下一词
@@ -226,7 +271,7 @@ function nextWord() {
             return;
         }
     }
-    refreshWord();  // 获取下一个单词
+    refreshWord();
 }
 
 // 清空错词本
@@ -246,7 +291,16 @@ function clearWrong() {
 // 切换模式
 function setMode(mode) {
     currentMode = mode;
-    resetGame();
+    // 重置顺序索引
+    currentIndex = 0;
+    // 重置计时记录（但不清空正确率？通常模式切换应该重置会话，避免混合统计）
+    correctCount = 0;
+    wrongCount = 0;
+    timeRecords = [];
+    isAnswered = false;
+    updateStats();
+    currentWordList = [...topicMap[currentTopic]];
+    resetGame();  // 刷新界面
 }
 
 // 切换题库
@@ -254,6 +308,12 @@ function setTopic(topic) {
     currentTopic = topic;
     currentWordList = [...topicMap[topic]];
     if (currentMode === "sequential") currentIndex = 0;
+    // 切换题库时重置统计
+    correctCount = 0;
+    wrongCount = 0;
+    timeRecords = [];
+    isAnswered = false;
+    updateStats();
     resetGame();
 }
 
@@ -290,6 +350,7 @@ function bindEvents() {
 // 初始化
 function init() {
     bindEvents();
+    // 默认高亮
     document.querySelector('.mode-btn[data-mode="random"]').classList.add('active');
     document.querySelector('.topic-btn[data-topic="all"]').classList.add('active');
     currentMode = "random";
