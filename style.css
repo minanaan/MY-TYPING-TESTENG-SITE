@@ -69,6 +69,22 @@ body {
     background: #d4e0e8;
 }
 
+.unit-select {
+    background: #f0f4fa;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 40px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #2c3e4e;
+    cursor: pointer;
+    outline: none;
+    font-family: inherit;
+}
+.unit-select:hover {
+    background: #d4e0e8;
+}
+
 .card {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(2px);
@@ -113,7 +129,7 @@ body {
 }
 
 .question-text {
-    font-size: 3.2rem;
+    font-size: 2.8rem;
     font-weight: 800;
     color: #0a2b3e;
     margin-bottom: 16px;
@@ -205,7 +221,7 @@ button:active:not(:disabled) {
 
 @media (max-width: 550px) {
     .card { padding: 20px; }
-    .question-text { font-size: 2.2rem; }
+    .question-text { font-size: 2rem; }
     .stats { font-size: 0.7rem; gap: 8px; }
     .buttons button { padding: 8px 20px; font-size: 0.9rem; }
     .control-bar { flex-direction: column; align-items: stretch; }
