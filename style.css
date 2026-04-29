@@ -227,3 +227,20 @@ button:active:not(:disabled) {
     .control-bar { flex-direction: column; align-items: stretch; }
     .mode-group, .topic-group { justify-content: center; }
 }
+
+/* 例句样式 */
+.extra-info {
+    line-height: 1.4;
+    max-width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+}
+.speakable {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #eef3fc;
+    padding: 4px 12px;
+    border-radius: 30px;
+    margin-bottom: 8px;
+}

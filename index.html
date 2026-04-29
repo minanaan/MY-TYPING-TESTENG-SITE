@@ -2,39 +2,35 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="description" content="测试部英语训练工具 - 拼写与释义，专业测试词汇学习">
     <title>测试部英语训练 · 拼写与释义</title>
     <link rel="stylesheet" href="style.css">
+    <!-- 预加载字体或图标库（可选） -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="app-container">
         <!-- 控制栏 -->
         <div class="control-bar">
             <div class="mode-group">
-                <span>练习模式：</span>
-                <button class="mode-btn" data-mode="recite">背诵练习</button>
-                <button class="mode-btn" data-mode="en2zh">英中练习</button>
-                <button class="mode-btn" data-mode="random">随机练习</button>
-                <button class="mode-btn" data-mode="sequential">顺序练习</button>
-                <button class="mode-btn" data-mode="wrong">错词练习</button>
+                <span>📌 练习模式：</span>
+                <button class="mode-btn" data-mode="recite">📖 背诵练习</button>
+                <button class="mode-btn" data-mode="en2zh">🔤 英中练习</button>
+                <button class="mode-btn" data-mode="random">🎲 随机练习</button>
+                <button class="mode-btn" data-mode="sequential">➡️ 顺序练习</button>
+                <button class="mode-btn" data-mode="wrong">❌ 错词练习</button>
             </div>
             <div class="topic-group">
-                <span>词库：</span>
-                <button class="topic-btn" data-topic="all">词汇汇总</button>
-                <button class="topic-btn" data-topic="basic">基础测试</button>
-                <button class="topic-btn" data-topic="defect">缺陷问题</button>
-                <button class="topic-btn" data-topic="operation">测试操作</button>
-                <select id="unitSelect" class="unit-select">
-                    <option value="unit1">单元词汇 Unit 1</option>
-                    <option value="unit2">单元词汇 Unit 2</option>
-                    <option value="unit3">单元词汇 Unit 3</option>
-                    <option value="unit4">单元词汇 Unit 4</option>
-                    <option value="unit5">单元词汇 Unit 5</option>
-                    <option value="unit6">单元词汇 Unit 6</option>
-                    <option value="unit7">单元词汇 Unit 7</option>
-                    <option value="unit8">单元词汇 Unit 8</option>
-                    <option value="unit9">单元词汇 Unit 9</option>
-                    <option value="unit10">单元词汇 Unit 10</option>
+                <span>📚 词库：</span>
+                <button class="topic-btn" data-topic="all">📦 词汇汇总</button>
+                <button class="topic-btn" data-topic="basic">🔧 基础测试</button>
+                <button class="topic-btn" data-topic="defect">🐞 缺陷问题</button>
+                <button class="topic-btn" data-topic="operation">⚙️ 测试操作</button>
+                <select id="unitSelect" class="unit-select" aria-label="单元词汇选择">
+                    <option value="unit1">📖 单元词汇 Unit 1</option>
                 </select>
             </div>
         </div>
@@ -42,26 +38,41 @@
         <!-- 主卡片 -->
         <div class="card">
             <div class="stats">
-                <span>✅ 正确：<span id="correctCount">0</span></span>
-                <span>❌ 错误：<span id="wrongCount">0</span></span>
-                <span>📊 准确率：<span id="accuracy">0</span>%</span>
-                <span>⏱️ 平均用时：<span id="avgTime">0.0</span> 秒</span>
-                <span>📋 进度：<span id="progress">0</span> / <span id="totalWords">0</span></span>
-                <button id="clearWrongBtn" class="small-btn">🗑️ 清空错词本</button>
+                <span>✅ 正确：<span id="correctCount" aria-live="polite">0</span></span>
+                <span>❌ 错误：<span id="wrongCount" aria-live="polite">0</span></span>
+                <span>📊 准确率：<span id="accuracy" aria-live="polite">0</span>%</span>
+                <span>⏱️ 平均用时：<span id="avgTime" aria-live="polite">0.0</span> 秒</span>
+                <span>📋 进度：<span id="progress" aria-live="polite">0</span> / <span id="totalWords" aria-live="polite">0</span></span>
+                <button id="clearWrongBtn" class="small-btn" aria-label="清空错词本">🗑️ 清空错词本</button>
             </div>
             <div class="question-area">
-                <div class="question-text" id="questionText">加载中...</div>
-                <div class="extra-info" id="extraInfo"></div>
-                <input type="text" id="answerInput" placeholder="在这里输入答案..." autocomplete="off" autofocus>
-                <div class="feedback" id="feedback"></div>
+                <div class="question-text" id="questionText">✨ 加载中...</div>
+                <div class="extra-info" id="extraInfo">
+                    <span class="loading-hint">请稍候，正在准备词库...</span>
+                </div>
+                <input type="text" id="answerInput" placeholder="在这里输入答案..." autocomplete="off" autofocus aria-label="答案输入框">
+                <div class="feedback" id="feedback" aria-live="assertive"></div>
                 <div class="buttons">
                     <button id="checkBtn">✔ 检查</button>
                     <button id="nextBtn" disabled>→ 下一词</button>
                     <button id="resetBtn">⏰ 重新开始</button>
                 </div>
+                <div class="keyboard-hint">
+                    💡 提示：按 <kbd>Enter</kbd> 检查答案，再次按 <kbd>Enter</kbd> 进入下一词
+                </div>
             </div>
         </div>
     </div>
+    <!-- 加载完成隐藏加载提示的 JS 小片段（可选） -->
+    <script>
+        // 简单加载占位替换（实际数据由 script.js 加载）
+        window.addEventListener('DOMContentLoaded', function() {
+            const extraInfo = document.getElementById('extraInfo');
+            if (extraInfo && extraInfo.innerHTML.includes('加载中')) {
+                // 保留原内容，等待 script 替换
+            }
+        });
+    </script>
     <script src="script.js"></script>
 </body>
 </html>

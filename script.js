@@ -1,182 +1,264 @@
-// ========== 1. 词库定义 ==========
-// 原有的四个题库
-const basicWords = [
-    { word: "test", chinese: "测试", phonetic: "/test/" },
-    { word: "test case", chinese: "测试用例", phonetic: "/test keɪs/" },
-    { word: "test report", chinese: "测试报告", phonetic: "/test rɪˈpɔːt/" },
-    { word: "test result", chinese: "测试结果", phonetic: "/test rɪˈzʌlt/" },
-    { word: "test process", chinese: "测试流程", phonetic: "/test ˈprəʊses/" },
-    { word: "test step", chinese: "测试步骤", phonetic: "/test step/" },
-    { word: "test plan", chinese: "测试计划", phonetic: "/test plæn/" },
-    { word: "test environment", chinese: "测试环境", phonetic: "/test ɪnˈvaɪrənmənt/" },
-    { word: "test data", chinese: "测试数据", phonetic: "/test ˈdeɪtə/" },
-    { word: "test tool", chinese: "测试工具", phonetic: "/test tuːl/" },
-    { word: "device", chinese: "设备", phonetic: "/dɪˈvaɪs/" },
-    { word: "sensor", chinese: "传感器", phonetic: "/ˈsen.sər/" },
-    { word: "firmware", chinese: "固件", phonetic: "/ˈfɜːm.weər/" },
-    { word: "signal", chinese: "信号", phonetic: "/ˈsɪɡ.nəl/" },
-    { word: "data", chinese: "数据", phonetic: "/ˈdeɪtə/" },
-    { word: "connection", chinese: "连接", phonetic: "/kəˈnek.ʃən/" },
-    { word: "transmission", chinese: "传输", phonetic: "/trænzˈmɪʃ.ən/" },
-    { word: "power", chinese: "电源", phonetic: "/ˈpaʊər/" },
-    { word: "run", chinese: "运行", phonetic: "/rʌn/" },
-    { word: "start", chinese: "启动", phonetic: "/stɑːt/" },
-    { word: "stop", chinese: "停止", phonetic: "/stɒp/" },
-    { word: "reset", chinese: "重置", phonetic: "/ˌriːˈset/" }
+// ========================= 词库解析与构建 =========================
+// 将用户提供的文本直接嵌入（格式：英文：中文｜例句）
+const rawBasicText = `
+A/B testing：A/B 测试｜We use A/B testing to compare two variants.
+acceptance testing：验收测试｜Acceptance testing decides whether to accept the system.
+accessibility：易访问性｜Test accessibility for all users.
+actual result：实测结果｜Compare actual result with expected result.
+ad hoc testing：随机测试｜Ad hoc testing is informal without test design.
+adaptability：适应性｜Check adaptability to different environments.
+Agile software development：敏捷软件开发｜Adopt agile in iterative development.
+alpha testing：Alpha 测试｜Alpha testing is done in dev environment.
+analytical test strategy：分析式测试策略｜Use analytical test strategy for coverage.
+API testing：API 测试｜API testing submits requests via interface.
+application programming interface (API)：应用程序编程接口｜Call API for data exchange.
+assertion：断言｜Add assertion to validate correct execution.
+beta testing：Beta 测试｜Beta testing is done at external site.
+black-box testing：黑盒测试｜Black-box testing bases on specification.
+boundary value analysis (BVA)：边界值分析｜BVA tests boundary values.
+branch testing：分支测试｜Branch testing covers all control branches.
+behavior-driven development (BDD)：行为驱动开发｜BDD focuses on expected behavior.
+capacity testing：容量测试｜Capacity testing evaluates system limit.
+checklist-based testing：基于检查表的测试｜Test items with a checklist.
+combinatorial testing：组合测试｜Combinatorial testing covers value combinations.
+component testing：组件测试｜Component testing tests individual units.
+compatibility testing：兼容性测试｜Compatibility testing checks cross-system work.
+condition testing：条件测试｜Condition testing covers atomic conditions.
+confirmation testing：确认测试｜Confirmation testing verifies fixed defects.
+continuous testing：持续测试｜Continuous testing runs throughout lifecycle.
+contract testing：契约测试｜Contract testing verifies interface contracts.
+coverage：覆盖｜Coverage measures test completion.
+cross-browser compatibility：跨浏览器兼容性｜Test on multiple browsers.
+crowd testing：众测｜Crowd testing uses many external testers.
+data-driven testing (DDT)：数据驱动测试｜DDT separates data and scripts.
+decision table testing：判定表测试｜Design cases by decision table.
+domain testing：域测试｜Domain testing covers equivalence boundaries.
+dynamic testing：动态测试｜Dynamic testing runs the test object.
+end-to-end (E2E) testing：端到端测试｜E2E testing tests full business flow.
+equivalence partitioning (EP)：等价类划分｜EP divides input into groups.
+error guessing：错误猜测｜Error guessing uses tester experience.
+exploratory testing：探索性测试｜Exploratory testing designs dynamically.
+functional testing：功能测试｜Functional testing checks functional suitability.
+grey-box testing：灰盒测试｜Grey-box combines black and white box.
+GUI testing：GUI 测试｜GUI testing interacts with visual interface.
+hardware-in-the-loop (HiL)：硬件在环｜HiL tests real hardware in simulation.
+high-level test case：概要测试用例｜Write abstract high-level test cases.
+integration testing：集成测试｜Integration testing tests component interactions.
+interface testing：接口测试｜Interface testing verifies data passing.
+keyword-driven testing (KDT)：关键字驱动测试｜KDT uses reusable keywords.
+load testing：负载测试｜Load testing tests under varying loads.
+low-level test case：详细测试用例｜Low-level test cases have concrete values.
+model-based testing (MBT)：基于模型的测试｜MBT derives tests from models.
+negative testing：逆向测试｜Negative testing uses invalid inputs.
+non-functional testing：非功能测试｜Non-functional testing tests quality attributes.
+pairwise testing：成对测试｜Pairwise testing covers parameter pairs.
+performance testing：性能测试｜Performance testing checks response time.
+portability testing：可移植性测试｜Portability testing checks environment migration.
+regression testing：回归测试｜Regression testing finds unintended defects.
+requirements-based testing：基于需求的测试｜Design cases from requirements.
+risk-based testing：基于风险的测试｜Prioritize tests by risk level.
+scenario-based testing：基于场景的测试｜Test real user scenarios.
+security testing：安全性测试｜Security testing defends against attacks.
+smoke test：冒烟测试｜Smoke test checks core functions.
+state transition testing：状态转移测试｜Test state changes in the system.
+static testing：静态测试｜Static testing does not execute code.
+stress testing：压力测试｜Stress testing tests beyond workload limits.
+system testing：系统测试｜System testing verifies the whole system.
+test：测试｜Execute test to verify quality.
+test approach：测试方法｜Define test approach for the project.
+test automation：测试自动化｜Automate repetitive test execution.
+test basis：测试依据｜Use requirements as test basis.
+test case：测试用例｜Test case includes input and expected result.
+test condition：测试条件｜Extract test conditions from test basis.
+test design：测试设计｜Test design derives test cases.
+test environment：测试环境｜Set up stable test environment.
+test execution：测试执行｜Run test cases in test execution.
+test level：测试级别｜Test levels include component and system.
+test object：测试对象｜The system is the main test object.
+test plan：测试计划｜Write test plan before testing.
+test strategy：测试策略｜Test strategy guides overall testing.
+test suite：测试套件｜Organize test cases into test suite.
+test technique：测试技术｜Use black-box and white-box techniques.
+test type：测试类型｜Functional and performance are test types.
+testability：易测试性｜Improve testability of components.
+testing：测试｜Testing evaluates product quality.
+unit testing：单元测试｜Unit testing tests smallest components.
+usability testing：易用性测试｜Usability testing checks user experience.
+user acceptance testing (UAT)：用户验收测试｜UAT is done by end users.
+V-model：V - 模型｜V-model matches dev phases to test levels.
+white-box testing：白盒测试｜White-box testing checks internal code.
+`;
+
+const rawDefectText = `
+abnormal end：异常终止｜Program causes abnormal end.
+anomaly：异常｜Record every anomaly in test.
+attack vector：攻击向量｜Block attack vectors to prevent intrusion.
+attacker：攻击者｜Prevent attackers from unauthorized access.
+bug hunting：缺陷采集｜Bug hunting motivates finding defects.
+code injection：代码注入｜Prevent code injection attacks.
+defect：缺陷｜Log every defect found in testing.
+defect density：缺陷密度｜Calculate defects per unit size.
+defect detection percentage (DDP)：缺陷检测率｜DDP measures test effectiveness.
+defect management：缺陷管理｜Manage defects from find to fix.
+defect report：缺陷报告｜Write clear defect report for developers.
+defect prevention：缺陷预防｜Defect prevention reduces recurrence.
+denial of service (DoS)：拒绝服务｜Defend against DoS attacks.
+error：错误｜Human error leads to defects.
+escaped defect：遗漏缺陷｜Escaped defects reach end users.
+failure：失效｜Failure is non-compliance with requirements.
+failure mode：失效模式｜Analyze failure modes of the system.
+failure mode and effect analysis (FMEA)：失效模式和影响分析｜FMEA identifies risks.
+fault injection：故障注入｜Fault injection tests robustness.
+fault tolerance：容错性｜Fault tolerance resists defects.
+false-negative result：假阴性结果｜False-negative misses real defects.
+false-positive result：假阳性结果｜False-positive reports non-existing defects.
+hacker：黑客｜Hackers attempt malicious attacks.
+insider threat：内部威胁｜Prevent threats from internal users.
+malware：恶意软件｜Malware harms system components.
+memory leak：内存泄漏｜Memory leak fails to release resources.
+root cause：根本原因｜Find root cause to avoid repeats.
+root cause analysis (RCA)：根本原因分析｜RCA finds defect source.
+vulnerability：漏洞｜Vulnerability allows successful attacks.
+weakness：弱点｜Weakness may cause security issues.
+wild pointer：野指针｜Wild pointer accesses invalid memory.
+`;
+
+const rawOperationText = `
+build verification test (BVT)：构建验证测试｜BVT validates new build integrity.
+capture/playback：捕获 / 回放｜Capture/playback generates test scripts.
+checklist-based reviewing：基于检查表的评审｜Review using standard checklist.
+computer forensics：电子取证｜Forensics analyzes attack details.
+control flow analysis：控制流分析｜Analyze code execution paths.
+data flow analysis：数据流分析｜Data flow analysis checks variable lifecycle.
+debugging：调试｜Debugging removes failure causes.
+dynamic analysis：动态分析｜Dynamic analysis analyzes runtime behavior.
+formal review：正式评审｜Formal review follows defined process.
+inspection：审查｜Inspection is a strict formal review.
+load generator：负载发生器｜Load generator simulates user traffic.
+maintenance testing：维护测试｜Maintenance testing checks system changes.
+monitoring tool：监测工具｜Tool monitors system under test.
+peer review：同行评审｜Peer review checks work products.
+penetration testing：渗透测试｜Penetration testing simulates attacks.
+review：评审｜Review finds defects early.
+static analysis：静态分析｜Static analysis checks code without run.
+test automation framework：测试自动化框架｜Framework supports test scripts.
+test data：测试数据｜Prepare valid and invalid test data.
+test data management：测试数据管理｜Manage test data compliantly.
+test driver：测试驱动｜Driver calls the tested component.
+test estimation：测试估算｜Estimate time and effort for testing.
+test fixture：测试夹具｜Fixture ensures repeatable test setup.
+test harness：测试用具｜Harness contains drivers and stubs.
+test log：测试日志｜Record steps in test log.
+test management：测试管理｜Manage test progress and resources.
+test monitoring：测试监测｜Monitor test progress against plan.
+test report：测试报告｜Test report summarizes results.
+test script：测试脚本｜Script automates test execution.
+test stub：测试桩｜Stub simulates lower components.
+test double：测试替身｜Double replaces dependent components.
+testing in production：生产中的测试｜Test safely in live environment.
+walkthrough：走查｜Author leads walkthrough of documents.
+`;
+
+// 原有词库（保留）
+const oldBasicWords = [
+    { word: "test", chinese: "测试", phonetic: "/test/", example: "Run the test to verify the function." },
+    { word: "test case", chinese: "测试用例", phonetic: "/test keɪs/", example: "Write test cases for each scenario." },
+    { word: "test report", chinese: "测试报告", phonetic: "/test rɪˈpɔːt/", example: "The test report summarizes all results." },
+    { word: "test result", chinese: "测试结果", phonetic: "/test rɪˈzʌlt/", example: "Compare actual with expected test result." },
+    { word: "test process", chinese: "测试流程", phonetic: "/test ˈprəʊses/", example: "Define a clear test process." },
+    { word: "test step", chinese: "测试步骤", phonetic: "/test step/", example: "Follow each test step carefully." },
+    { word: "test plan", chinese: "测试计划", phonetic: "/test plæn/", example: "The test plan outlines the scope." },
+    { word: "test environment", chinese: "测试环境", phonetic: "/test ɪnˈvaɪrənmənt/", example: "Set up a stable test environment." },
+    { word: "test data", chinese: "测试数据", phonetic: "/test ˈdeɪtə/", example: "Prepare valid and invalid test data." },
+    { word: "test tool", chinese: "测试工具", phonetic: "/test tuːl/", example: "Use automated test tools." },
+    { word: "device", chinese: "设备", phonetic: "/dɪˈvaɪs/", example: "Connect the device to the computer." },
+    { word: "sensor", chinese: "传感器", phonetic: "/ˈsen.sər/", example: "The sensor detects temperature changes." },
+    { word: "firmware", chinese: "固件", phonetic: "/ˈfɜːm.weər/", example: "Update the firmware to fix bugs." },
+    { word: "signal", chinese: "信号", phonetic: "/ˈsɪɡ.nəl/", example: "Check the signal strength." },
+    { word: "data", chinese: "数据", phonetic: "/ˈdeɪtə/", example: "Store data securely." },
+    { word: "connection", chinese: "连接", phonetic: "/kəˈnek.ʃən/", example: "The connection was lost." },
+    { word: "transmission", chinese: "传输", phonetic: "/trænzˈmɪʃ.ən/", example: "Data transmission is fast." },
+    { word: "power", chinese: "电源", phonetic: "/ˈpaʊər/", example: "Turn on the power." },
+    { word: "run", chinese: "运行", phonetic: "/rʌn/", example: "Run the script." },
+    { word: "start", chinese: "启动", phonetic: "/stɑːt/", example: "Start the service." },
+    { word: "stop", chinese: "停止", phonetic: "/stɒp/", example: "Stop the process." },
+    { word: "reset", chinese: "重置", phonetic: "/ˌriːˈset/", example: "Reset the device to default." }
 ];
 
-const defectWords = [
-    { word: "defect", chinese: "缺陷", phonetic: "/ˈdiː.fekt/" },
-    { word: "bug", chinese: "漏洞", phonetic: "/bʌɡ/" },
-    { word: "error", chinese: "错误", phonetic: "/ˈer.ər/" },
-    { word: "fault", chinese: "故障", phonetic: "/fɔːlt/" },
-    { word: "problem", chinese: "问题", phonetic: "/ˈprɒb.ləm/" },
-    { word: "abnormal", chinese: "异常", phonetic: "/æbˈnɔː.məl/" },
-    { word: "failure", chinese: "失败", phonetic: "/ˈfeɪ.ljər/" },
-    { word: "crash", chinese: "崩溃", phonetic: "/kræʃ/" },
-    { word: "warning", chinese: "警告", phonetic: "/ˈwɔː.nɪŋ/" },
-    { word: "error code", chinese: "错误代码", phonetic: "/ˈer.ər koʊd/" }
+const oldDefectWords = [
+    { word: "defect", chinese: "缺陷", phonetic: "/ˈdiː.fekt/", example: "Log the defect in the tracking system." },
+    { word: "bug", chinese: "漏洞", phonetic: "/bʌɡ/", example: "The bug causes crash." },
+    { word: "error", chinese: "错误", phonetic: "/ˈer.ər/", example: "Handle the error gracefully." },
+    { word: "fault", chinese: "故障", phonetic: "/fɔːlt/", example: "A fault occurred in the module." },
+    { word: "problem", chinese: "问题", phonetic: "/ˈprɒb.ləm/", example: "Identify the root problem." },
+    { word: "abnormal", chinese: "异常", phonetic: "/æbˈnɔː.məl/", example: "Abnormal termination detected." },
+    { word: "failure", chinese: "失败", phonetic: "/ˈfeɪ.ljər/", example: "The test ended in failure." },
+    { word: "crash", chinese: "崩溃", phonetic: "/kræʃ/", example: "The system may crash under load." },
+    { word: "warning", chinese: "警告", phonetic: "/ˈwɔː.nɪŋ/", example: "Warning: low disk space." },
+    { word: "error code", chinese: "错误代码", phonetic: "/ˈer.ər koʊd/", example: "Error code 404 means not found." }
 ];
 
-const operationWords = [
-    { word: "run test", chinese: "执行测试", phonetic: "/rʌn test/" },
-    { word: "check", chinese: "检查", phonetic: "/tʃek/" },
-    { word: "verify", chinese: "验证", phonetic: "/ˈver.ɪ.faɪ/" },
-    { word: "confirm", chinese: "确认", phonetic: "/kənˈfɜːm/" },
-    { word: "record", chinese: "记录", phonetic: "/rɪˈkɔːd/" },
-    { word: "report", chinese: "报告", phonetic: "/rɪˈpɔːt/" },
-    { word: "debug", chinese: "调试", phonetic: "/ˌdiːˈbʌɡ/" },
-    { word: "simulate", chinese: "模拟", phonetic: "/ˈsɪm.jə.leɪt/" },
-    { word: "monitor", chinese: "监控", phonetic: "/ˈmɒn.ɪ.tər/" },
-    { word: "analyze", chinese: "分析", phonetic: "/ˈæn.əl.aɪz/" }
+const oldOperationWords = [
+    { word: "run test", chinese: "执行测试", phonetic: "/rʌn test/", example: "Run the test suite daily." },
+    { word: "check", chinese: "检查", phonetic: "/tʃek/", example: "Check the output for correctness." },
+    { word: "verify", chinese: "验证", phonetic: "/ˈver.ɪ.faɪ/", example: "Verify that the fix works." },
+    { word: "confirm", chinese: "确认", phonetic: "/kənˈfɜːm/", example: "Confirm the deletion." },
+    { word: "record", chinese: "记录", phonetic: "/rɪˈkɔːd/", example: "Record the test results." },
+    { word: "report", chinese: "报告", phonetic: "/rɪˈpɔːt/", example: "Report the issue to the team." },
+    { word: "debug", chinese: "调试", phonetic: "/ˌdiːˈbʌɡ/", example: "Debug the code step by step." },
+    { word: "simulate", chinese: "模拟", phonetic: "/ˈsɪm.jə.leɪt/", example: "Simulate high traffic load." },
+    { word: "monitor", chinese: "监控", phonetic: "/ˈmɒn.ɪ.tər/", example: "Monitor system performance." },
+    { word: "analyze", chinese: "分析", phonetic: "/ˈæn.əl.aɪz/", example: "Analyze the root cause." }
 ];
 
-// 单元词汇（10个单元，每个单元10个单词，内容为测试相关，可自行修改）
-const unitWords = {
-    unit1: [
-        { word: "compile", chinese: "编译", phonetic: "/kəmˈpaɪl/" },
-        { word: "execute", chinese: "执行", phonetic: "/ˈeksɪkjuːt/" },
-        { word: "debug", chinese: "调试", phonetic: "/ˌdiːˈbʌɡ/" },
-        { word: "syntax", chinese: "语法", phonetic: "/ˈsɪntæks/" },
-        { word: "variable", chinese: "变量", phonetic: "/ˈveəriəbl/" },
-        { word: "function", chinese: "函数", phonetic: "/ˈfʌŋkʃən/" },
-        { word: "loop", chinese: "循环", phonetic: "/luːp/" },
-        { word: "array", chinese: "数组", phonetic: "/əˈreɪ/" },
-        { word: "object", chinese: "对象", phonetic: "/ˈɒbdʒɪkt/" },
-        { word: "class", chinese: "类", phonetic: "/klɑːs/" }
-    ],
-    unit2: [
-        { word: "interface", chinese: "接口", phonetic: "/ˈɪntəfeɪs/" },
-        { word: "inheritance", chinese: "继承", phonetic: "/ɪnˈherɪtəns/" },
-        { word: "polymorphism", chinese: "多态", phonetic: "/ˌpɒliˈmɔːfɪzəm/" },
-        { word: "encapsulation", chinese: "封装", phonetic: "/ɪnˌkæpsjuˈleɪʃən/" },
-        { word: "abstraction", chinese: "抽象", phonetic: "/æbˈstrækʃən/" },
-        { word: "algorithm", chinese: "算法", phonetic: "/ˈælɡərɪðəm/" },
-        { word: "recursion", chinese: "递归", phonetic: "/rɪˈkɜːʃən/" },
-        { word: "pointer", chinese: "指针", phonetic: "/ˈpɔɪntər/" },
-        { word: "reference", chinese: "引用", phonetic: "/ˈrefrəns/" },
-        { word: "exception", chinese: "异常", phonetic: "/ɪkˈsepʃən/" }
-    ],
-    unit3: [
-        { word: "thread", chinese: "线程", phonetic: "/θred/" },
-        { word: "process", chinese: "进程", phonetic: "/ˈprəʊses/" },
-        { word: "synchronize", chinese: "同步", phonetic: "/ˈsɪŋkrənaɪz/" },
-        { word: "deadlock", chinese: "死锁", phonetic: "/ˈdedlɒk/" },
-        { word: "semaphore", chinese: "信号量", phonetic: "/ˈseməfɔːr/" },
-        { word: "mutex", chinese: "互斥锁", phonetic: "/ˈmjuːteks/" },
-        { word: "heap", chinese: "堆", phonetic: "/hiːp/" },
-        { word: "stack", chinese: "栈", phonetic: "/stæk/" },
-        { word: "queue", chinese: "队列", phonetic: "/kjuː/" },
-        { word: "buffer", chinese: "缓冲区", phonetic: "/ˈbʌfər/" }
-    ],
-    unit4: [
-        { word: "database", chinese: "数据库", phonetic: "/ˈdeɪtəbeɪs/" },
-        { word: "query", chinese: "查询", phonetic: "/ˈkwɪəri/" },
-        { word: "index", chinese: "索引", phonetic: "/ˈɪndeks/" },
-        { word: "transaction", chinese: "事务", phonetic: "/trænˈzækʃən/" },
-        { word: "commit", chinese: "提交", phonetic: "/kəˈmɪt/" },
-        { word: "rollback", chinese: "回滚", phonetic: "/ˈrəʊlbæk/" },
-        { word: "primary key", chinese: "主键", phonetic: "/ˈpraɪməri kiː/" },
-        { word: "foreign key", chinese: "外键", phonetic: "/ˈfɒrɪn kiː/" },
-        { word: "join", chinese: "连接", phonetic: "/dʒɔɪn/" },
-        { word: "normalize", chinese: "规范化", phonetic: "/ˈnɔːməlaɪz/" }
-    ],
-    unit5: [
-        { word: "network", chinese: "网络", phonetic: "/ˈnetwɜːk/" },
-        { word: "protocol", chinese: "协议", phonetic: "/ˈprəʊtəkɒl/" },
-        { word: "packet", chinese: "数据包", phonetic: "/ˈpækɪt/" },
-        { word: "router", chinese: "路由器", phonetic: "/ˈruːtər/" },
-        { word: "switch", chinese: "交换机", phonetic: "/swɪtʃ/" },
-        { word: "firewall", chinese: "防火墙", phonetic: "/ˈfaɪəwɔːl/" },
-        { word: "latency", chinese: "延迟", phonetic: "/ˈleɪtənsi/" },
-        { word: "bandwidth", chinese: "带宽", phonetic: "/ˈbændwɪdθ/" },
-        { word: "IP address", chinese: "IP地址", phonetic: "/aɪ piː əˈdres/" },
-        { word: "domain", chinese: "域名", phonetic: "/dəˈmeɪn/" }
-    ],
-    unit6: [
-        { word: "API", chinese: "应用程序接口", phonetic: "/ˌeɪ piː ˈaɪ/" },
-        { word: "endpoint", chinese: "端点", phonetic: "/ˈendpɔɪnt/" },
-        { word: "request", chinese: "请求", phonetic: "/rɪˈkwest/" },
-        { word: "response", chinese: "响应", phonetic: "/rɪˈspɒns/" },
-        { word: "JSON", chinese: "JSON格式", phonetic: "/ˈdʒeɪsən/" },
-        { word: "XML", chinese: "可扩展标记语言", phonetic: "/ˌeks em ˈel/" },
-        { word: "authentication", chinese: "认证", phonetic: "/ɔːˌθentɪˈkeɪʃən/" },
-        { word: "authorization", chinese: "授权", phonetic: "/ˌɔːθəraɪˈzeɪʃən/" },
-        { word: "token", chinese: "令牌", phonetic: "/ˈtəʊkən/" },
-        { word: "session", chinese: "会话", phonetic: "/ˈseʃən/" }
-    ],
-    unit7: [
-        { word: "frontend", chinese: "前端", phonetic: "/ˈfrʌntend/" },
-        { word: "backend", chinese: "后端", phonetic: "/ˈbækend/" },
-        { word: "framework", chinese: "框架", phonetic: "/ˈfreɪmwɜːk/" },
-        { word: "library", chinese: "库", phonetic: "/ˈlaɪbrəri/" },
-        { word: "component", chinese: "组件", phonetic: "/kəmˈpəʊnənt/" },
-        { word: "state", chinese: "状态", phonetic: "/steɪt/" },
-        { word: "props", chinese: "属性", phonetic: "/prɒps/" },
-        { word: "hook", chinese: "钩子", phonetic: "/hʊk/" },
-        { word: "router", chinese: "路由", phonetic: "/ˈruːtər/" },
-        { word: "build", chinese: "构建", phonetic: "/bɪld/" }
-    ],
-    unit8: [
-        { word: "version control", chinese: "版本控制", phonetic: "/ˈvɜːʃən kənˈtrəʊl/" },
-        { word: "repository", chinese: "仓库", phonetic: "/rɪˈpɒzɪtəri/" },
-        { word: "commit", chinese: "提交", phonetic: "/kəˈmɪt/" },
-        { word: "branch", chinese: "分支", phonetic: "/brɑːntʃ/" },
-        { word: "merge", chinese: "合并", phonetic: "/mɜːdʒ/" },
-        { word: "pull request", chinese: "拉取请求", phonetic: "/pʊl rɪˈkwest/" },
-        { word: "clone", chinese: "克隆", phonetic: "/kləʊn/" },
-        { word: "fork", chinese: "复刻", phonetic: "/fɔːk/" },
-        { word: "remote", chinese: "远程", phonetic: "/rɪˈməʊt/" },
-        { word: "conflict", chinese: "冲突", phonetic: "/ˈkɒnflɪkt/" }
-    ],
-    unit9: [
-        { word: "cloud computing", chinese: "云计算", phonetic: "/klaʊd kəmˈpjuːtɪŋ/" },
-        { word: "virtualization", chinese: "虚拟化", phonetic: "/ˌvɜːtʃuəlaɪˈzeɪʃən/" },
-        { word: "container", chinese: "容器", phonetic: "/kənˈteɪnər/" },
-        { word: "orchestration", chinese: "编排", phonetic: "/ˌɔːkɪˈstreɪʃən/" },
-        { word: "microservice", chinese: "微服务", phonetic: "/ˈmaɪkrəʊˌsɜːvɪs/" },
-        { word: "serverless", chinese: "无服务器", phonetic: "/ˈsɜːvələs/" },
-        { word: "scalability", chinese: "可扩展性", phonetic: "/ˌskeɪləˈbɪlɪti/" },
-        { word: "high availability", chinese: "高可用性", phonetic: "/haɪ əˌveɪləˈbɪlɪti/" },
-        { word: "load balancer", chinese: "负载均衡器", phonetic: "/ləʊd ˈbælənsər/" },
-        { word: "disaster recovery", chinese: "灾难恢复", phonetic: "/dɪˈzɑːstər rɪˈkʌvəri/" }
-    ],
-    unit10: [
-        { word: "machine learning", chinese: "机器学习", phonetic: "/məˈʃiːn ˈlɜːnɪŋ/" },
-        { word: "neural network", chinese: "神经网络", phonetic: "/ˈnjʊərəl ˈnetwɜːk/" },
-        { word: "training", chinese: "训练", phonetic: "/ˈtreɪnɪŋ/" },
-        { word: "inference", chinese: "推理", phonetic: "/ˈɪnfərəns/" },
-        { word: "feature", chinese: "特征", phonetic: "/ˈfiːtʃər/" },
-        { word: "label", chinese: "标签", phonetic: "/ˈleɪbəl/" },
-        { word: "overfitting", chinese: "过拟合", phonetic: "/ˌəʊvəˈfɪtɪŋ/" },
-        { word: "underfitting", chinese: "欠拟合", phonetic: "/ˌʌndəˈfɪtɪŋ/" },
-        { word: "accuracy", chinese: "准确率", phonetic: "/ˈækjərəsi/" },
-        { word: "dataset", chinese: "数据集", phonetic: "/ˈdeɪtəset/" }
-    ]
-};
+// 解析文本函数
+function parseWordList(rawText) {
+    const lines = rawText.trim().split('\n');
+    const result = [];
+    for (let line of lines) {
+        line = line.trim();
+        if (!line) continue;
+        // 格式："英文：中文｜例句"
+        let parts = line.split('｜');
+        let left = parts[0];
+        let example = parts[1] ? parts[1].trim() : '';
+        let colonIndex = left.indexOf('：');
+        if (colonIndex === -1) colonIndex = left.indexOf(':');
+        if (colonIndex === -1) continue;
+        let word = left.substring(0, colonIndex).trim();
+        let chinese = left.substring(colonIndex + 1).trim();
+        // 自动生成音标（粗略）
+        let phonetic = '/' + word.replace(/[^a-z]/gi, '').toLowerCase() + '/';
+        result.push({ word, chinese, phonetic, example });
+    }
+    return result;
+}
 
-// 合并所有单元词汇为一个对象，同时保留原始题库
+// 构建新词库
+const newBasicWords = parseWordList(rawBasicText);
+const newDefectWords = parseWordList(rawDefectText);
+const newOperationWords = parseWordList(rawOperationText);
+
+// 合并新旧词库（去重：按 word 小写）
+function mergeUnique(oldArr, newArr) {
+    const map = new Map();
+    [...oldArr, ...newArr].forEach(item => {
+        const key = item.word.toLowerCase();
+        if (!map.has(key)) {
+            map.set(key, item);
+        }
+    });
+    return Array.from(map.values());
+}
+
+const basicWords = mergeUnique(oldBasicWords, newBasicWords);
+const defectWords = mergeUnique(oldDefectWords, newDefectWords);
+const operationWords = mergeUnique(oldOperationWords, newOperationWords);
+
+// 总词库（词汇汇总）
 const allWords = [...basicWords, ...defectWords, ...operationWords];
+
+// 定义可用的词库映射
 const topicMap = {
     all: allWords,
     basic: basicWords,
@@ -184,13 +266,34 @@ const topicMap = {
     operation: operationWords
 };
 
-// 动态将 unitWords 添加到 topicMap
-for (let i = 1; i <= 10; i++) {
-    const key = `unit${i}`;
+// ========================= 动态单元词汇生成 =========================
+// 根据总词库随机排序后切分为每10个一单元
+function generateUnitsFromWordList(wordList, wordsPerUnit = 10) {
+    // 打乱数组顺序（Fisher-Yates）
+    const shuffled = [...wordList];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    const units = {};
+    const totalUnits = Math.ceil(shuffled.length / wordsPerUnit);
+    for (let u = 1; u <= totalUnits; u++) {
+        const start = (u - 1) * wordsPerUnit;
+        const end = start + wordsPerUnit;
+        units[`unit${u}`] = shuffled.slice(start, end);
+    }
+    return units;
+}
+
+// 生成单元词汇（每次页面加载时重新生成，保证随机性；但也可以固定，此处选择固定以保持一致性）
+// 为了用户不会每次刷新都改变单元内容，可以在页面加载时生成一次并存储，这样可以。
+let unitWords = generateUnitsFromWordList(allWords, 10);
+// 将生成的单元添加到 topicMap
+for (let key in unitWords) {
     topicMap[key] = unitWords[key];
 }
 
-// ========== 2. DOM 元素 ==========
+// ========================= DOM 元素 =========================
 const questionTextEl = document.getElementById('questionText');
 const extraInfoEl = document.getElementById('extraInfo');
 const answerInput = document.getElementById('answerInput');
@@ -207,30 +310,27 @@ const totalSpan = document.getElementById('totalWords');
 const clearWrongBtn = document.getElementById('clearWrongBtn');
 const unitSelect = document.getElementById('unitSelect');
 
-// ========== 3. 全局变量 ==========
-let currentTopic = "all";          // 当前词库标识
-let currentMode = "recite";        // 练习模式
+// ========================= 全局状态 =========================
+let currentTopic = "all";
+let currentMode = "recite";
 let currentWordList = [];
 let currentIndex = 0;
 let correctCount = 0;
 let wrongCount = 0;
 let isAnswered = false;
 let wrongWords = [];
-
 let currentWordObj = null;
-
 let currentStartTime = null;
 let timeRecords = [];
 let practicedCount = 0;
 
-// ========== 4. 辅助函数 ==========
+// ========================= 辅助函数 =========================
 function updateStats() {
     correctSpan.textContent = correctCount;
     wrongSpan.textContent = wrongCount;
     const total = correctCount + wrongCount;
     const accuracy = total === 0 ? 0 : Math.round((correctCount / total) * 100);
     accuracySpan.textContent = accuracy;
-    
     if (timeRecords.length === 0) {
         avgTimeSpan.textContent = "0.0";
     } else {
@@ -254,7 +354,7 @@ function fetchNewWordObj() {
         if (wrongWords.length === 0) return null;
         const rand = Math.floor(Math.random() * wrongWords.length);
         return wrongWords[rand];
-    } else { // recite, random, en2zh 随机抽取
+    } else {
         if (currentWordList.length === 0) return null;
         const rand = Math.floor(Math.random() * currentWordList.length);
         return currentWordList[rand];
@@ -271,8 +371,8 @@ function speakWord(word) {
 function refreshWord() {
     currentWordObj = fetchNewWordObj();
     if (!currentWordObj) {
-        questionTextEl.textContent = "🎉 恭喜完成！ 🎉";
-        extraInfoEl.textContent = "";
+        questionTextEl.innerHTML = "🎉 恭喜完成！ 🎉";
+        extraInfoEl.innerHTML = "";
         answerInput.disabled = true;
         checkBtn.disabled = true;
         nextBtn.disabled = true;
@@ -280,19 +380,26 @@ function refreshWord() {
         return;
     }
     
-    // 根据模式显示题目
     if (currentMode === "recite") {
-        // 背诵练习：同时显示中文、音标和英文单词本身
-        questionTextEl.innerHTML = `${currentWordObj.chinese}<br><span style="font-size:1.8rem;">${currentWordObj.word}</span>`;
-        extraInfoEl.textContent = currentWordObj.phonetic || "";
+        // 背诵练习：显示中文、英文、音标（带喇叭）、例句
+        questionTextEl.innerHTML = `<div>${currentWordObj.chinese}</div><div style="font-size:1.8rem; margin-top:8px;">${currentWordObj.word}</div>`;
+        let phoneticHtml = currentWordObj.phonetic ? `<span style="cursor:pointer;" class="speakable">🔊 ${currentWordObj.phonetic}</span>` : '';
+        let exampleHtml = currentWordObj.example ? `<div style="font-size:0.8rem; margin-top:8px; color:#555;">📖 ${currentWordObj.example}</div>` : '';
+        extraInfoEl.innerHTML = phoneticHtml + exampleHtml;
+        // 绑定音标区域发音事件
+        const speakSpan = extraInfoEl.querySelector('.speakable');
+        if (speakSpan) {
+            speakSpan.onclick = (e) => {
+                e.stopPropagation();
+                speakWord(currentWordObj.word);
+            };
+        }
     } else if (currentMode === "en2zh") {
-        // 英中练习：显示英文，输入中文
         questionTextEl.textContent = currentWordObj.word;
-        extraInfoEl.textContent = currentWordObj.phonetic || "";
+        extraInfoEl.innerHTML = currentWordObj.phonetic || "";
     } else {
-        // random, sequential, wrong 均显示中文（中译英）
         questionTextEl.textContent = currentWordObj.chinese;
-        extraInfoEl.textContent = currentWordObj.phonetic || "";
+        extraInfoEl.innerHTML = currentWordObj.phonetic || "";
     }
     
     answerInput.disabled = false;
@@ -319,8 +426,8 @@ function resetGame() {
     currentWordList = [...topicMap[currentTopic]];
     
     if (currentMode === "wrong" && wrongWords.length === 0) {
-        questionTextEl.textContent = "📭 暂无错词";
-        extraInfoEl.textContent = "";
+        questionTextEl.innerHTML = "📭 暂无错词";
+        extraInfoEl.innerHTML = "";
         answerInput.disabled = true;
         checkBtn.disabled = true;
         nextBtn.disabled = true;
@@ -339,7 +446,6 @@ function checkAnswer() {
         resetGame();
         return;
     }
-    
     const elapsed = (Date.now() - currentStartTime) / 1000;
     timeRecords.push(elapsed);
     
@@ -351,7 +457,6 @@ function checkAnswer() {
         correctAnswerText = currentWordObj.chinese;
         isCorrect = (userAnswer === correctAnswerText);
     } else {
-        // recite, random, sequential, wrong 都是中译英（或背诵模式要求输入英文）
         correctAnswerText = currentWordObj.word.toLowerCase();
         isCorrect = (userAnswer.trim().toLowerCase() === correctAnswerText);
     }
@@ -367,15 +472,12 @@ function checkAnswer() {
             wrongWords.push({ ...currentWordObj });
         }
     }
-    
     practicedCount++;
     updateProgress();
-    
     isAnswered = true;
     nextBtn.disabled = false;
     checkBtn.disabled = true;
     updateStats();
-    
     feedbackEl.innerHTML += `<span style="font-size:0.8rem; margin-left:10px;"> ⏱️ 本次用时 ${elapsed.toFixed(1)}秒</span>`;
 }
 
@@ -431,32 +533,37 @@ function setTopic(topic) {
     isAnswered = false;
     updateStats();
     resetGame();
-    // 同步下拉框选择
     if (topic.startsWith('unit')) {
         unitSelect.value = topic;
     } else {
-        unitSelect.value = 'unit1'; // 默认值，不影响展示
+        unitSelect.value = 'unit1';
     }
 }
 
-// 监听下拉框变化
 function bindUnitSelect() {
+    // 动态生成下拉选项
+    const totalUnits = Object.keys(unitWords).length;
+    unitSelect.innerHTML = '';
+    for (let i = 1; i <= totalUnits; i++) {
+        const option = document.createElement('option');
+        option.value = `unit${i}`;
+        option.textContent = `单元词汇 Unit ${i}`;
+        unitSelect.appendChild(option);
+    }
     unitSelect.addEventListener('change', (e) => {
         const selected = e.target.value;
-        // 清除其他词库按钮的高亮
         document.querySelectorAll('.topic-btn').forEach(btn => btn.classList.remove('active'));
         setTopic(selected);
     });
 }
 
-// ========== 5. 事件绑定 ==========
+// ========================= 事件绑定 =========================
 function bindEvents() {
     checkBtn.onclick = checkAnswer;
     nextBtn.onclick = nextWord;
     resetBtn.onclick = resetGame;
     clearWrongBtn.onclick = clearWrong;
     
-    // 模式按钮
     document.querySelectorAll('.mode-btn').forEach(btn => {
         btn.onclick = () => {
             document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
@@ -465,7 +572,6 @@ function bindEvents() {
         };
     });
     
-    // 词库按钮（四个固定词库）
     document.querySelectorAll('.topic-btn').forEach(btn => {
         btn.onclick = () => {
             document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
@@ -476,14 +582,14 @@ function bindEvents() {
     
     bindUnitSelect();
     
-    // 音标区域点击发音
-    extraInfoEl.addEventListener('click', () => {
+    // 全局音标区域点击发音（非背诵模式下的额外支持）
+    extraInfoEl.addEventListener('click', (e) => {
+        if (e.target.classList && e.target.classList.contains('speakable')) return;
         if (currentWordObj) {
             speakWord(currentWordObj.word);
         }
     });
     
-    // 输入框回车智能处理
     answerInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -496,10 +602,9 @@ function bindEvents() {
     });
 }
 
-// 初始化
 function init() {
     bindEvents();
-    // 默认高亮背诵练习和词汇汇总
+    // 默认高亮
     document.querySelector('.mode-btn[data-mode="recite"]').classList.add('active');
     document.querySelector('.topic-btn[data-topic="all"]').classList.add('active');
     currentMode = "recite";
